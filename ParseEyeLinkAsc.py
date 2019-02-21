@@ -5,14 +5,14 @@
 
 
 def ParseEyeLinkAsc(elFilename):
-    # dfTrial,dfMsg,dfFix,dfSacc,dfBlink,dfSamples = ParseEyeLinkAsc(elFilename)
+    # dfRec,dfMsg,dfFix,dfSacc,dfBlink,dfSamples = ParseEyeLinkAsc(elFilename)
     # -Reads in data files from EyeLink .asc file and produces readable dataframes for further analysis.
     #
     # INPUTS:
     # -elFilename is a string indicating an EyeLink data file from an AX-CPT task in the current path.
     #
     # OUTPUTS:
-    # -dfTrial contains information about trials
+    # -dfRec contains information about recording periods (often trials)
     # -dfMsg contains information about messages (usually sent from stimulus software)
     # -dfFix contains information about fixations
     # -dfSacc contains information about saccades
@@ -20,6 +20,7 @@ def ParseEyeLinkAsc(elFilename):
     # -dfSamples contains information about individual samples
     #
     # Created 7/31/18-8/15/18 by DJ.
+    # Updated 11/12/18 by DJ - switched from "trials" to "recording periods" for experiments with continuous recording
     
     # Import packages
     import numpy as np
@@ -31,7 +32,7 @@ def ParseEyeLinkAsc(elFilename):
     print('Reading in EyeLink file %s...'%elFilename)
     t = time.time()
     f = open(elFilename,'r')
-    fileTxt0 = f.read().split("\n") # split into lines (runs)
+    fileTxt0 = f.read().splitlines(True) # split into lines
     fileTxt0 = filter(None, fileTxt0) #  remove emptys
     fileTxt0 = np.array(fileTxt0) # concert to np array for simpler indexing
     f.close()
@@ -61,17 +62,17 @@ def ParseEyeLinkAsc(elFilename):
     # ===== PARSE EYELINK FILE ===== #
     t = time.time()
     # Trials
-    print('Parsing trial markers...')
+    print('Parsing recording markers...')
     iNotStart = np.nonzero(lineType!='START')[0]
-    dfTrialStart = pd.read_csv(elFilename,skiprows=iNotStart,header=None,delim_whitespace=True,usecols=[1])
-    dfTrialStart.columns = ['tStart']
+    dfRecStart = pd.read_csv(elFilename,skiprows=iNotStart,header=None,delim_whitespace=True,usecols=[1])
+    dfRecStart.columns = ['tStart']
     iNotEnd = np.nonzero(lineType!='END')[0]
-    dfTrialEnd = pd.read_csv(elFilename,skiprows=iNotEnd,header=None,delim_whitespace=True,usecols=[1,5,6])
-    dfTrialEnd.columns = ['tEnd','xRes','yRes']
+    dfRecEnd = pd.read_csv(elFilename,skiprows=iNotEnd,header=None,delim_whitespace=True,usecols=[1,5,6])
+    dfRecEnd.columns = ['tEnd','xRes','yRes']
     # combine trial info
-    dfTrial = pd.concat([dfTrialStart,dfTrialEnd],axis=1)
-    nTrials = dfTrial.shape[0]
-    print('%d trials found.'%nTrials)
+    dfRec = pd.concat([dfRecStart,dfRecEnd],axis=1)
+    nRec = dfRec.shape[0]
+    print('%d recording periods found.'%nRec)
 
     # Import Messages
     print('Parsing stimulus messages...')
@@ -129,7 +130,7 @@ def ParseEyeLinkAsc(elFilename):
     print('Done! Took %.1f seconds.'%(time.time()-t))
     
     # Return new compilation dataframe
-    return dfTrial,dfMsg,dfFix,dfSacc,dfBlink,dfSamples
+    return dfRec,dfMsg,dfFix,dfSacc,dfBlink,dfSamples
     
     
     
