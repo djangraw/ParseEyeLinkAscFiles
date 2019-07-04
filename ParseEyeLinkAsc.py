@@ -2,6 +2,7 @@
 # - Reads in .asc data files from EyeLink and produces pandas dataframes for further analysis
 #
 # Created 7/31/18-8/15/18 by DJ.
+# Updated 7/4/19 by DJ - detects and handles monocular sample data.
 
 
 def ParseEyeLinkAsc(elFilename):
@@ -116,17 +117,33 @@ def ParseEyeLinkAsc(elFilename):
     dfBlink.columns = ['eye','tStart','tEnd','duration']
     print('Done! Took %f seconds.'%(time.time()-t))
     
-    # Import samples
+    # determine sample columns based on eyes recorded in file
+    eyesInFile = np.unique(dfFix.eye)
+    if eyesInFile.size==2:
+        print('binocular data detected.')
+        cols = ['tSample', 'LX', 'LY', 'LPupil', 'RX', 'RY', 'RPupil']
+    else:
+        eye = eyesInFile[0]
+        print('monocular data detected (%c eye).'%eye)
+        cols = ['tSample', '%cX'%eye, '%cY'%eye, '%cPupil'%eye]
+    # Import samples    
     print('Parsing samples...')
     t = time.time()
     iNotSample = np.nonzero( np.logical_or(lineType!='SAMPLE', np.arange(nLines)<iStartRec))[0]
-    dfSamples = pd.read_csv(elFilename,skiprows=iNotSample,header=None,delim_whitespace=True,usecols=range(0,7))
-    dfSamples.columns = ['tSample', 'LX', 'LY', 'LPupil', 'RX', 'RY', 'RPupil']
+    dfSamples = pd.read_csv(elFilename,skiprows=iNotSample,header=None,delim_whitespace=True,
+                            usecols=range(0,len(cols)))
+    dfSamples.columns = cols
     # Convert values to numbers
-    dfSamples['LX'] = pd.to_numeric(dfSamples['LX'],errors='coerce')
-    dfSamples['LY'] = pd.to_numeric(dfSamples['LY'],errors='coerce')
-    dfSamples['RX'] = pd.to_numeric(dfSamples['RX'],errors='coerce')
-    dfSamples['RY'] = pd.to_numeric(dfSamples['RY'],errors='coerce')
+    for eye in ['L','R']:
+        if eye in eyesInFile:
+            dfSamples['%cX'%eye] = pd.to_numeric(dfSamples['%cX'%eye],errors='coerce')
+            dfSamples['%cY'%eye] = pd.to_numeric(dfSamples['%cY'%eye],errors='coerce')
+            dfSamples['%cPupil'%eye] = pd.to_numeric(dfSamples['%cPupil'%eye],errors='coerce')
+        else:
+            dfSamples['%cX'%eye] = np.nan
+            dfSamples['%cY'%eye] = np.nan
+            dfSamples['%cPupil'%eye] = np.nan
+            
     print('Done! Took %.1f seconds.'%(time.time()-t))
     
     # Return new compilation dataframe
