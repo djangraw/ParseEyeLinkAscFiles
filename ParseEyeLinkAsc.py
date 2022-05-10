@@ -34,7 +34,7 @@ def ParseEyeLinkAsc(elFilename):
     t = time.time()
     f = open(elFilename,'r')
     fileTxt0 = f.read().splitlines(True) # split into lines
-    fileTxt0 = filter(None, fileTxt0) #  remove emptys
+    fileTxt0 = list(filter(None, fileTxt0)) #  remove emptys
     fileTxt0 = np.array(fileTxt0) # concert to np array for simpler indexing
     f.close()
     print('Done! Took %f seconds.'%(time.time()-t))
